@@ -1,0 +1,951 @@
+<link href="https://fonts.cdnfonts.com/css/ninja-naruto" rel="stylesheet" /><script defer="" src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js"></script><script defer="" src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script><script>
+ fetch("./jutsu.json")
+fetch("./perks.json")
+    const JUTSU_LIST_URL = "/f34-jutsu-lists";
+    const NEW_POST_URL = "/post?f=3&mode=newtopic";
+
+    const skillAppTemplate = `<div align="center" style="overflow:auto;"><table align="center"><tr><td style="text-align:justify;width:400px;height:600px"><center><img src="http://media.tumblr.com/tumblr_lty8wg3EfH1qa894m.gif" style="width:400px;"></center>
+[hr]
+[center][color=lightblue][size=24][b][u]The Jutsu Profile [/u][/b][/size][/color][/center]
+[center][color=lightblue][size=18][b][u]Character Information[/u][/b][/size][/color][/center]
+[color=lightblue][b]Character Name:[/b][/color] {characterName}
+[color=lightblue][b]Character Tier:[/b][/color] {tier}
+[color=lightblue][b]Character Application:[/b][/color] <a href="{appUrl}">App</a>
+[center][color=lightblue][size=18][b][u]Skills[/u][/b][/size][/color][/center]
+[i]Taijutsu:[/i] {skillTai}
+[i]Ninjutsu:[/i] {skillNin}
+[i]Genjutsu:[/i] {skillGen}
+[i]Strength:[/i] {skillStr}
+[i]Agility:[/i] {skillSpd}
+[i]Endurance:[/i] {skillEnd}
+
+[i]Chakra Capacity:[/i] {skillCap}
+[i]Chakra Efficiency:[/i] {skillEff}
+[i]Weapons Mastery:[/i] {skillKen}
+[i]Fuuinjutsu:[/i] {skillFuuin}
+[i]Medical:[/i] {skillMed}
+[i]Summoning:[/i] {skillSum}
+
+Selected Perks:
+{perks}
+
+[center][color=lightblue][size=18][b][u]Jutsu's[/u][/b][/size][/color][/center]
+(List Jutsus Here)
+{jutsu}
+</td></td></tr></table></div>
+
+    `;
+
+    const jutsuTemplate = `
+[color=lightblue][b]Jutsu Name:[/b][/color] {jutsuName}
+[color=lightblue][b]Jutsu Type:[/b][/color] {jutsuBranch}
+[color=lightblue][b]Jutsu Element:[/b][/color] {jutsuElement}
+[color=lightblue][b]Jutsu Rank:[/b][/color] {jutsuRank}
+[color=lightblue][b]Jutsu Clan:[/b][/color] {jutsuClan}
+[color=lightblue][b]Jutsu Description:[/b][/color] {jutsuDescription}
+    `;
+
+    let jutsuList = [];
+
+    const tiers = {
+        "4-5": { skillPoints: 3,  jutsuMaxRank: 'D', maxJutsu: 2, maxRankJutsu: undefined},
+        "4-4": { skillPoints: 5,  jutsuMaxRank: 'D', maxJutsu: 4, maxRankJutsu: undefined},
+        "4-3": { skillPoints: 7,  jutsuMaxRank: 'C', maxJutsu: 6, maxRankJutsu: 1},
+        "4-2": { skillPoints: 9,  jutsuMaxRank: 'C', maxJutsu: 8, maxRankJutsu: 2},
+        "4-1": { skillPoints: 11, jutsuMaxRank: 'C', maxJutsu: 10, maxRankJutsu: 3},
+        "3-5": { skillPoints: 14, jutsuMaxRank: 'C', maxJutsu: 12, maxRankJutsu: 4},
+        "3-4": { skillPoints: 16, jutsuMaxRank: 'C', maxJutsu: 14, maxRankJutsu: 5},
+        "3-3": { skillPoints: 18, jutsuMaxRank: 'B', maxJutsu: 16, maxRankJutsu: 1},
+        "3-2": { skillPoints: 20, jutsuMaxRank: 'B', maxJutsu: 18, maxRankJutsu: 2},
+        "3-1": { skillPoints: 22, jutsuMaxRank: 'B', maxJutsu: 20, maxRankJutsu: 3},
+        "2-5": { skillPoints: 25, jutsuMaxRank: 'B', maxJutsu: 22, maxRankJutsu: 4},
+        "2-4": { skillPoints: 27, jutsuMaxRank: 'B', maxJutsu: 24, maxRankJutsu: 5},
+        "2-3": { skillPoints: 29, jutsuMaxRank: 'A', maxJutsu: 26, maxRankJutsu: 1},
+        "2-2": { skillPoints: 31, jutsuMaxRank: 'A', maxJutsu: 28, maxRankJutsu: 2},
+        "2-1": { skillPoints: 33, jutsuMaxRank: 'A', maxJutsu: 30, maxRankJutsu: 3},
+        "1-5": { skillPoints: 36, jutsuMaxRank: 'A', maxJutsu: 33, maxRankJutsu: 4},
+        "1-4": { skillPoints: 38, jutsuMaxRank: 'A', maxJutsu: 36, maxRankJutsu: 5},
+        "1-3": { skillPoints: 40, jutsuMaxRank: 'S', maxJutsu: 39, maxRankJutsu: 1},
+        "1-2": { skillPoints: 42, jutsuMaxRank: 'S', maxJutsu: 42, maxRankJutsu: 2},
+        "1-1": { skillPoints: 44, jutsuMaxRank: 'S', maxJutsu: 45, maxRankJutsu: 3},
+        "0-5": { skillPoints: 47, jutsuMaxRank: 'S', maxJutsu: 50, maxRankJutsu: 4},
+        "0-4": { skillPoints: 49, jutsuMaxRank: 'S', maxJutsu: 55, maxRankJutsu: 6},
+        "0-3": { skillPoints: 51, jutsuMaxRank: 'S', maxJutsu: 60, maxRankJutsu: 8},
+        "0-2": { skillPoints: 53, jutsuMaxRank: 'S', maxJutsu: 65, maxRankJutsu: 10},
+    };
+
+    getPerks().then(async (perkList) => {
+        const store = await Alpine.store('state');
+        store.perks = perkList;
+    });
+
+    fetch(JUTSU_URL).then(async (jutsu) => {
+        jutsuList = (await jutsu.json()).sort(compareJutsu);
+
+        const store = await Alpine.store('autocomplete');
+        store.items = jutsuList;
+    });
+
+    document.addEventListener('alpine:init', () => {
+        
+        Alpine.store('state', {
+            characterName: '',
+            tier: '',
+            appUrl: '',
+            headerImageUrl: '',
+            tab: 'search',
+            proficiencies: {
+                taijutsu: { val: 0 },
+                ninjutsu: { val: 0 },
+                genjutsu: { val: 0 },
+                strength: { val: 0 },
+                agility: { val: 0 },
+                endurance: { val: 0 },
+                chakraCapacity: { val: 0 },
+                chakraEfficiency: { val: 0 },
+                weaponsMastery: { val: 0 },
+                fuuinjutsu: { val: 0 },
+                medical: { val: 0 },
+                summoning: { val: 0 },
+            },
+            perks: {},
+            jutsu: [],
+        });
+
+        Alpine.store('autocomplete', {
+            items: []
+        });
+    });
+
+    document.addEventListener('alpine:initialized', () => {
+    });
+
+    async function getPerks() {
+        const perks = await fetch(PERKS_URL);
+        return perks.json();
+    }
+
+    function proficiencyRankDisplay(num) {
+        switch (num) {
+            case 0: return "Untrained";
+            case 1: return "Novice";
+            case 2: return "Adept";
+            case 3: return "Expert";
+            case 4: return "Master";
+            case 5: return "Grandmaster";
+            default: return "Unknown";
+        }
+    }
+
+    function skillNameDisplay(name) {
+        switch (name) {
+            case "taijutsu": return "Taijutsu";
+            case "ninjutsu": return "Ninjutsu";
+            case "genjutsu": return "Genjutsu";
+            case "strength": return "Strength";
+            case "agility": return "Agility";
+            case "endurance": return "Endurance";
+            case "chakraCapacity": return "Chakra Capacity";
+            case "chakraEfficiency": return "Chakra Efficiency";
+            case "weaponsMastery": return "Weapons Mastery";
+            case "fuuinjutsu": return "Fuuinjutsu";
+            case "medical": return "Medical";
+            case "summoning": return "Summoning";
+        }
+    }
+
+    async function perkNameDisplay(name) {
+        const perks = await Alpine.store('state').perks
+        return perks[name]?.name ?? "Unknown Perk";
+    }
+
+    function openModal() {
+        const dialog = document.getElementById("outputDialog");
+        dialog.showModal();
+    }
+
+    function closeModal() {
+        const dialog = document.getElementById("outputDialog");
+        dialog.close();
+    }
+
+    async function fetchSearchResults(data) {
+        const searchTerm = data.searchName.toLowerCase();
+        const regex = new RegExp(searchTerm);
+        const store = await Alpine.store('autocomplete');
+
+        let filteredList = jutsuList;
+
+        if (data.searchName) {
+            filteredList = jutsuList.filter(i => regex.test(i.jutsuName.toLowerCase()));
+        }
+
+        if (data.searchElement) {
+            filteredList = filteredList.filter(j => j.jutsuElement?.toLowerCase() === data.searchElement.toLowerCase());
+        }
+
+        if (data.searchClan) {
+            filteredList = filteredList.filter(j => j.jutsuClan?.toLowerCase() === data.searchClan.toLowerCase());
+        }
+
+        if (data.searchRank) {
+            filteredList = filteredList.filter(j => j.jutsuRank?.toLowerCase() === data.searchRank.toLowerCase());
+        }
+
+        store.items = filteredList;
+    }
+
+    async function addJutsu({
+        jutsuName,
+        jutsuBranch,
+        jutsuElement,
+        jutsuClan,
+        jutsuRank,
+        jutsuDescription,
+    }) {
+        const store = await Alpine.store('state');
+        if (store.jutsu.filter(j => j.jutsuName === jutsuName).length) {
+            return;
+        } 
+        store.jutsu.push({
+            jutsuName,
+            jutsuBranch,
+            jutsuElement,
+            jutsuClan,
+            jutsuRank,
+            jutsuDescription,
+        })
+    }
+
+    async function removeJutsu(jutsu) {
+        const store = await Alpine.store('state');
+        const newJutsuList = store.jutsu.filter(j => j.jutsuName !== jutsu.jutsuName);
+        store.jutsu = newJutsuList;
+    }
+
+    function compareJutsu(a, b) {
+        return a.jutsuName < b.jutsuName ? -1 : a.jutsuName > b.jutsuName ? 1 : 0;
+    }
+
+    function sumJutsu(store) {
+        if(!store.tier) {
+            return "--"
+        }
+
+        const jutsuConfig = tiers[store.tier];
+
+        return store.jutsu.filter(j => j.jutsuRank === jutsuConfig.jutsuMaxRank).length;
+    }
+
+    function countMaxRankJutsu(store) {
+        return tiers[store.tier]?.maxRankJutsu ?? "--"
+    }
+
+    function getJutsuMaxRank(store) {
+        return tiers[store.tier]?.jutsuMaxRank ?? "D"
+    }
+
+    function getTotalJutsu(store) {
+        return store.jutsu.length
+    }
+
+    function getJutsuTotalMax(store) {
+        return tiers[store.tier]?.maxJutsu ?? "--"
+    }
+
+    function togglePerk(perkKey, store) {
+        const perk = (store.perks)[perkKey]
+
+        if(!prereqsSatisfied(perkKey, store)) {
+            perk.selected = false;
+            return;
+        }
+
+        perk.selected = !perk.selected;
+
+        validatePerks(store);
+    }
+
+    function isPerkSelected(perkKey, store) {
+        return store.perks[perkKey]?.selected ?? false;
+    }
+
+    function getCurrentSkillPoints(store) {
+        const skillTotal = Object.values(store.proficiencies).map(p => parseInt(p.val)).reduce((a,b)=>a+b, 0)
+        const perkTotal = Object.values(store.perks).filter(p => p.selected).map(p => p.cost).reduce((a,b)=>a+b, 0)
+
+        return skillTotal + perkTotal;
+    }
+
+    function getSkillPointMax(store) {
+        return tiers[store.tier]?.skillPoints ?? '--';
+    }
+
+    function hasValidTier(store) {
+        return Object.keys(tiers).includes(store.tier);
+    }
+
+    function prereqsSatisfied(perkKey, store) {
+        const perk = store?.perks[perkKey];
+        if (!perk) return false;
+        if (!Object.keys(perk.prerequisites).length) return true;
+
+        const analysis = {
+            "skills": (list) => Object.keys(list).filter((key) => store.proficiencies[key].val < list[key]).length === 0,
+            "perks": (list) => list.filter(p => !store.perks[p]?.selected).length === 0,
+            "bloodline": (list) => true,
+        }
+
+        return analysis["skills"](perk.prerequisites["skills"] ?? {}) 
+            && analysis["perks"](perk.prerequisites["perks"] ?? []) 
+            && analysis["bloodline"](perk.prerequisites["bloodline"] ?? []);
+    }
+
+    function validatePerks(store) {
+        Object.keys(store.perks).forEach((p) => {
+            if (!prereqsSatisfied(p, store)) {
+                store.perks[p].selected = false;
+            }
+        });
+    }
+
+    const outputTransformers = [
+        {
+            key: "characterName", 
+            fn: (store) => store.characterName,
+        },
+        {
+            key: "tier",
+            fn: (store) => store.tier,
+        },
+        {
+            key: "appUrl",
+            fn: (store) => store.appUrl,
+        },
+        {
+            key: "skillTai",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.taijutsu.val)),
+        },
+        {
+            key: "skillNin",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.ninjutsu.val)),
+        },
+        {
+            key: "skillGen",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.genjutsu.val)),
+        },
+        {
+            key: "skillStr",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.strength.val)),
+        },
+        {
+            key: "skillSpd",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.agility.val)),
+        },
+        {
+            key: "skillEnd",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.endurance.val)),
+        },
+        {
+            key: "skillCap",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.chakraCapacity.val)),
+        },
+        {
+            key: "skillEff",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.chakraEfficiency.val)),
+        },
+        {
+            key: "skillKen",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.weaponsMastery.val)),
+        },
+        {
+            key: "skillFuuin",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.fuuinjutsu.val)),
+        },
+        {
+            key: "skillMed",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.medical.val)),
+        },
+        {
+            key: "skillSum",
+            fn: (store) => proficiencyRankDisplay(parseInt(store.proficiencies.summoning.val)),
+        },
+        {
+            key: "perks",
+            fn: (store) => Object.keys(store.perks).filter(p => store.perks[p].selected).reduce((acc, perkKey) => acc+buildSkillTemplate(perkKey, store), ""),
+        },
+        {
+            key: "jutsu",
+            fn: (store) => store.jutsu.reduce((a, b) => a + buildJutsuTemplate(b), ""),
+        },
+    ]
+
+    function getOutput(store) {
+        return outputTransformers.reduce((a, b) => a.replace(`{${b.key}}`, b.fn(store)), skillAppTemplate);
+    }
+
+    function buildJutsuTemplate(jutsu) {
+        return jutsuTemplate
+            .replace("{jutsuName}", jutsu.jutsuName)
+            .replace("{jutsuBranch}", jutsu.jutsuBranch ?? 'N/A')
+            .replace("{jutsuElement}", jutsu.jutsuElement ?? 'N/A')
+            .replace("{jutsuClan}", jutsu.jutsuClan ?? 'N/A')
+            .replace("{jutsuRank}", jutsu.jutsuRank ?? 'N/A')
+            .replace("{jutsuDescription}", jutsu.jutsuDescription ?? 'N/A');
+    }
+
+    function buildSkillTemplate(perkKey, store) {
+        return `${store.perks[perkKey].name} (${'⬤'.repeat(store.perks[perkKey].cost)})\n`
+    }
+
+    function makeNewPost(store) {
+        var output = getOutput(store);
+
+        localStorage.setItem('x-app-generator-result', output);
+
+        document.location = NEW_POST_URL;
+    }
+</script> <style>
+    .form-content {
+        max-width: 850px;
+        font-size: 16px;
+        margin: auto;
+        font-family: 'Verdana';
+        color: #222;
+    }
+    .help {
+        font-style: italic;
+        color: #888;
+        font-size: 0.8em;
+    }
+    .form-section {
+        background-color: #eee;
+        box-shadow: 0px 12px 24px -3px rgba(0,0,0,0.75);
+        width: 100%;
+        margin-left: 0.5em;
+        margin-right: 0.5em;
+        padding: 1rem;
+        padding-top: 1.5rem;
+        color: #222;
+        margin-top: 1em;
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-evenly;
+        box-sizing: border-box;
+    }
+    .section-header {
+        font-size: 1.75em;
+        letter-spacing: 0.2ch;
+        text-align: center;
+        margin-bottom:1em;
+        width: 100%;
+        font-family: 'Ninja Naruto';
+    }
+    .form-field-title {
+        display: block;
+        width: 100%;
+        font-size: 1.25em;
+        margin: 0.5rem 0px;
+        border-bottom: 1px solid #ccc;
+        line-height: 2em;
+    }
+    .input-container {
+        position: relative;
+        display: inline-block;
+        height: 100px;
+    }
+    .input-container > label {
+        position: absolute;
+        display: block;
+        font-size: 1.25rem;
+        top: 0.5em;
+        left: 0.5em;
+        transition: 0.2s;
+        transform-origin: left top;
+        color: #888;
+    }
+    .text-input {
+        font-size: 1.25rem;
+        width: 100%;
+        background-color: transparent;
+        border: 0px;
+        border-bottom: 2px solid #800;
+        padding: 0.5rem;
+        letter-spacing: 0.2ch;
+        outline: none;
+    }
+    .text-input:focus + label,
+    .text-input:not(:placeholder-shown) + label {
+        transform: translateY(-100%) scale(0.75);
+        color: #800;
+        left: 0px;
+    }
+    .check-label {
+        color: #222;
+    }
+    .text-area {
+        font-size: 1.25rem;
+        width: 100%;
+        background-color: transparent;
+        border: 0px;
+        border: 2px solid #800;
+        padding: 0.5rem;
+        outline: none;
+        font-family: inherit;
+    }
+    .skill-list {
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-evenly;
+    }
+    .skill-container {
+        width: 250px;
+    }
+    .skill-option {
+        display: block;
+        
+    }
+    .skill-header {
+        margin: 1em 0px;
+        font-size: 1.125em;
+        letter-spacing: 0.2ch;
+        text-align: center;
+        color: #222;
+        border-bottom: 1px solid #800;
+        font-family: 'Ninja Naruto';
+    }
+    .perk-container {
+        width: 250px;
+        transition: 0.2s;
+        box-sizing: border-box;
+        padding: 0.5em;
+        background-color: #eee;
+        margin-bottom: 0.5em;
+    }
+    .perk-container:not(.locked):hover {
+        transform: scale(120%);
+        box-shadow: 0px 12px 24px -3px rgba(0,0,0,0.75);
+    }
+    .perk-container.selected {
+        border: 2px solid #800;
+    }
+    .perk-container.locked {
+        opacity: 50%;
+    }
+    .skill-points {
+        width:100%;
+        text-align: center;
+        letter-spacing: 0.2ch;
+        font-size: 0.7em;
+    }
+    .tab-container {
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-between;
+        border-bottom: 2px solid #800;
+        transition: 0.2s;
+        width:100%;
+        margin-bottom: 1.25em;
+    }
+    .tab {
+        width: 50%;
+        transition: 0.2s;
+        box-sizing: border-box;
+        padding: 0.5em;
+        font-size: 1.25em;
+        text-align: center;
+    }
+    .tab.active,
+    .tab:hover {
+        background-color: #800;
+        color: #eee;
+    }
+    .custom-jutsu {
+        width: 100%;
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-evenly;
+        margin-bottom: 2em;
+    }
+    .jutsu-search {
+        width: 100%;
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-evenly;
+        margin-bottom: 2em;
+    }
+    .autocomplete {
+        width:100%;
+        padding:1em;
+        border:2px solid #800;
+        margin:1.5em 0px;
+        max-height:700px;
+        overflow-y: scroll;
+    }
+    .autocomplete-row {
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-between;
+        font-style: italic;
+        font-size: 0.8em;
+        transition: 0.2s;
+    }
+    .data-row:hover {
+        background-color: #800;
+        color: #eee;
+    }
+    .auto-primary {
+        font-style: normal;
+        font-size: 1em;
+    }
+    .auto-header {
+        font-weight: bold;
+        border-bottom: 1px solid #800;
+    }
+    .jutsu-list {
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-evenly;
+    }
+    .jutsu-listitem-button {
+        background-color: #800;
+        color: #eee;
+        padding: 0.25em 0.5em;
+        border-radius: 5px;
+        transition: 0.2s;
+        float:right;
+    }
+    .jutsu-listitem-container {
+        display: flex;
+        width: 100%;
+        flex-flow: row wrap;
+        justify-content: space-evenly;
+    }
+    .jutsu-listitem-header {
+        margin: 1em 0px;
+        font-size: 1.25em;
+        letter-spacing: 0.2ch;
+        text-align: center;
+        color: #222;
+        border-bottom: 1px solid #800;
+        font-family: 'Ninja Naruto';
+        width: 100%;
+    }
+    .jutsu-listitem-trait {
+        font-size: 1em;
+        max-width: 25%;
+    }
+    .jutsu-listitem-description {
+        font-size: 0.8em;
+        width: 100%;
+    }
+    .jutsu-button {
+        display: block;
+        font-size: 1.75em;
+        background-color: #800;
+        color: #eee;
+        padding: 0.25em 0.5em;
+        border-radius: 5px;
+        transition: 0.2s;
+        font-family: 'Ninja Naruto';
+        margin-top: 1em;
+    }
+    .jutsu-button:hover {
+        filter: brightness(120%);
+        transform-origin: right;
+        box-shadow: 0px 12px 24px -3px rgba(0,0,0,0.75);
+    }
+    .jutsu-button:active {
+        background-color: #400;
+        transition: 0s;
+    }
+    .form-footer {
+        margin-top: 1em;
+        position: sticky;
+        bottom: 0px;
+        margin-left: 0.5em;
+        width:100%;
+        padding: 1.5em 1em;
+        background-color: rgba(140, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        color: #eee;
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: space-between;
+        box-sizing: border-box;
+    }
+    .generate-cta {
+        display: block;
+        font-size: 1.75em;
+        background-color: #eee;
+        color: #800;
+        padding: 0.25em 0.5em;
+        border-radius: 5px;
+        transition: 0.2s;
+        font-family: 'Ninja Naruto';
+    }
+    .generate-cta:hover {
+        transform: scale(120%);
+        transform-origin: right;
+        box-shadow: 0px 12px 24px -3px rgba(0,0,0,0.75);
+    }
+    .generate-cta:active {
+        background-color: #ccc;
+        transition: 0s;
+    }
+    .output-dialog {
+        width: 800px;
+        max-height: calc(100vh - 210px);
+        overflow-y: auto;
+        border: none;
+        background-color: rgba(140, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        color: #eee;
+        margin: auto;
+        padding: 1em;
+    }
+    .output-dialog::backdrop {
+        backdrop-filter: blur(5px);
+    }
+    .output-dialog > header {
+        margin-top: 1em;
+    }
+    .output-container {
+        width:100%;
+        clear: both;
+        background-color: rgba(140, 0, 0, 0.7);
+        box-sizing: border-box;
+        padding: 1em;
+        overflow: scroll;
+        font-family: monospace;
+        margin-bottom: 1em;
+        white-space: pre;
+        max-height: 1000px;
+    }
+    .dialog-cta {
+        display: block;
+        float: right;
+        font-size: 1.75em;
+        background-color: #eee;
+        color: #800;
+        padding: 0.25em 0.5em;
+        border-radius: 5px;
+        transition: 0.2s;
+        font-family: 'Ninja Naruto';
+        margin-left: 1em;
+    }
+    .dialog-cta:hover {
+        filter: brightness(120%);
+        box-shadow: 0px 12px 24px -3px rgba(0,0,0,0.75);
+    }
+    .dialog-cta:active {
+        background-color: #ccc;
+        transition: 0s;
+    }
+</style>
+<div x-data="" class="form-content">
+	          
+	<div class="form-section">
+		              
+		<div class="section-header">
+			               Application Header            
+		</div>
+		              
+		<div style="width:48%" class="input-container" x-id="['text-input']">
+			               <input class="text-input" placeholder=" " id="text-input-characterName" x-model="$store.state.characterName" />            <label for="text-input-characterName">Name</label>               
+			<div class="help">
+				   Your character's name.   
+			</div>
+			                 
+		</div>
+		              
+		<div style="width:48%" class="input-container" x-id="['text-input']">
+			               <input x-mask="9-9" class="text-input" placeholder=" " id="text-input-tier" x-model="$store.state.tier" />            <label for="text-input-tier">Tier</label>               
+			<div class="help" x-text="$store.state.tier && !Object.keys(tiers).includes($store.state.tier) 
+                ? 'This tier doesn\'t exist. (Only tiers 4-5 thru 0-2 are allowed.)'
+                : 'Your character\'s assigned tier. (e.g. 3-2)'
+            ">
+				     
+			</div>
+			                 
+		</div>
+		              
+		<div style="width:97%" class="input-container" x-id="['text-input']">
+			               <input class="text-input" placeholder=" " id="text-input-appUrl" x-model="$store.state.appUrl" />            <label for="text-input-appUrl">Application URL</label>               
+			<div class="help">
+				   The URL for your character's primary application.   
+			</div>
+			                 
+		</div>
+		          
+	</div>
+	             
+	<div class="form-section">
+		              
+		<div class="section-header">
+			               Skills            
+		</div>
+		              
+		<div class="skill-list">
+			               <template x-for="(value, key) in $store.state.proficiencies" :key="key"></template>  
+		</div>
+		     
+	</div>
+	                   
+	<div class="form-section" x-data="{ hideLocked: true }">
+		              
+		<div class="section-header">
+			               Perks            
+		</div>
+		              
+		<div style="width:100%">
+			               <input type="checkbox" id="hideLocked" x-model="hideLocked" />            <label class="check-label" for="hideLocked">Hide Locked Skills</label>           
+		</div>
+		           <template x-for="(value, key) in $store.state.perks" :key="key"></template>       
+	</div>
+	          
+	<div class="form-section">
+		              
+		<div class="section-header">
+			               Jutsu            
+		</div>
+		              
+		<div class="tab-container">
+			                  
+			<div @click="$store.state.tab = 'search'" :class="`tab ${($store.state.tab === 'search' ? 'active' : '')}`">
+				   Search for a Jutsu   
+			</div>
+			                  
+			<div @click="$store.state.tab = 'custom'" :class="`tab ${($store.state.tab === 'custom' ? 'active' : '')}`">
+				   Make Your Own   
+			</div>
+			              
+		</div>
+		              
+		<div class="custom-jutsu" x-show="$store.state.tab === 'custom'" x-data="{ 
+            jutsuName: '', 
+            jutsuBranch: '', 
+            jutsuElement: '',
+            jutsuClan: '',
+            jutsuRank: '', 
+            jutsuDescription: '',
+        }">
+			                  
+			<div style="width:48%" class="input-container">
+				                   <input class="text-input" placeholder=" " id="text-input-jutsuName" x-model="jutsuName" />                <label for="text-input-jutsuName">Jutsu Name</label>               
+			</div>
+			                  
+			<div style="width:48%" class="input-container">
+				                   <input class="text-input" placeholder=" " id="text-input-jutsuBranch" x-model="jutsuBranch" />                <label for="text-input-jutsuBranch">Branch</label>                   
+				<div class="help">
+					   Ninjutsu, Taijutsu, etc.   
+				</div>
+				                     
+			</div>
+			                  
+			<div style="width:32%" class="input-container">
+				                   <input class="text-input" placeholder=" " id="text-input-jutsuElement" x-model="jutsuElement" />                <label for="text-input-jutsuElement">Element</label>               
+			</div>
+			                  
+			<div style="width:32%" class="input-container">
+				                   <input class="text-input" placeholder=" " id="text-input-jutsuClan" x-model="jutsuClan" />                <label for="text-input-jutsuClan">Clan</label>                   
+				<div class="help">
+					   The clan your jutsu is associated with, if any.   
+				</div>
+				                     
+			</div>
+			                  
+			<div style="width:32%" class="input-container">
+				                   <input x-mask="a" class="text-input" placeholder=" " id="text-input-jutsuRank" x-model="jutsuRank" />                <label for="text-input-jutsuRank">Rank</label>                   
+				<div class="help">
+					   The jutsu's rank   
+				</div>
+				                     
+			</div>
+			                  
+			<div style="width:100%; height:auto;" class="input-container">
+				                   <textarea placeholder="Description" rows="5" class="text-area" id="text-input-jutsuDescription" x-model="jutsuDescription"></textarea>                   
+				<div class="help">
+					   Give a thorough description of what your jutsu does when used.   
+				</div>
+				                     
+			</div>
+			                  
+			<button class="jutsu-button" @click="addJutsu($data)">
+				                   Add                
+			</button>
+			              
+		</div>
+		              
+		<div x-show="$store.state.tab === 'search'" class="jutsu-search" x-data="{ 
+            searchName: '', searchElement: '', searchRank: '', searchClan: '',
+        }">
+			                  
+			<div style="width:97%" class="input-container">
+				                   <input class="text-input" placeholder="Search..." id="text-input-searchName" x-model="searchName" @input.debounce="fetchSearchResults($data)" />                   
+				<div class="help">
+					   Enter a jutsu name to begin searching.   
+				</div>
+				                     
+			</div>
+			                  
+			<div style="width:32%" class="input-container">
+				                   <input class="text-input" placeholder=" " id="text-input-searchElement" x-model="searchElement" @input.debounce="fetchSearchResults($data)" />                <label for="text-input-searchElement">Filter by Element</label>               
+			</div>
+			                  
+			<div style="width:32%" class="input-container">
+				                   <input x-mask="a" class="text-input" placeholder=" " id="text-input-searchRank" x-model="searchRank" @input.debounce="fetchSearchResults($data)" />                <label for="text-input-searchRank">Filter by Rank</label>               
+			</div>
+			                  
+			<div style="width:32%" class="input-container">
+				                   <input class="text-input" placeholder=" " id="text-input-searchClan" x-model="searchClan" @input.debounce="fetchSearchResults($data)" />                <label for="text-input-searchClan">Filter by Clan</label>               
+			</div>
+			                  
+			<div class="help">
+				   Tip: Jutsu are categorized by their English name, except in cases where the Japanese name is more commonly used (e.g. Rasengan). If you're not sure what the name of a specific jutsu is, try finding it in the <a :href="JUTSU_LIST_URL">jutsu list.</a>   
+			</div>
+			                  
+			<div class="autocomplete">
+				                   <template x-if="$store.autocomplete.items.length === 0"></template>                <template x-if="$store.autocomplete.items.length > 0"></template>                <template x-for="item in $store.autocomplete.items"></template>               
+			</div>
+			              
+		</div>
+		              
+		<div class="section-header">
+			               My Jutsu            
+		</div>
+		              
+		<div class="jutsu-list" x-show="$store.state.jutsu.length > 0">
+			               <template x-for="jutsu in $store.state.jutsu.sort(compareJutsu)"></template>           
+		</div>
+		          
+	</div>
+	          
+	<div class="form-footer">
+		              
+		<div class="section-header">
+			   Summary   
+		</div>
+		              
+		<div>
+			               <span x-text="hasValidTier($store.state) ? `Totals for ${$store.state.tier}` : 'No tier selected!!'"></span><br />            <span x-text="`${getCurrentSkillPoints($store.state)}/${getSkillPointMax($store.state)}`"></span> Skill Points<br />            <span x-text="`${sumJutsu($store.state)}/${countMaxRankJutsu($store.state)} ${getJutsuMaxRank($store.state)}`"></span>-rank Jutsu<br />            <span x-text="`${getTotalJutsu($store.state)}/${getJutsuTotalMax($store.state)}`"></span> Total Jutsu           
+		</div>
+		              
+		<button @click="openModal()" class="generate-cta">
+			               Generate!!            
+		</button>
+		          
+	</div>
+	       <dialog id="outputDialog" class="output-dialog">            </dialog> 
+	<div @click="closeModal()" style="font-size: 2em; float: right; cursor: pointer;">
+		 × 
+	</div><dialog id="outputDialog" class="output-dialog">            <header class="output-header"></header></dialog> 
+	<div class="section-header" style="">
+		 Output 
+	</div><dialog id="outputDialog" class="output-dialog"><header class="output-header"></header>            </dialog> 
+	<div class="output-container" x-text="getOutput($store.state)" style=""></div><dialog id="outputDialog" class="output-dialog">            <footer>            </footer></dialog> 
+	<button @click="makeNewPost($store.state)" class="dialog-cta" style="">
+		 Create Post 
+	</button><dialog id="outputDialog" class="output-dialog"><footer>                          
+			<!--    <button class="dialog-cta">Copy to Clipboard</button>    -->                    </footer>        </dialog>
+</div>
